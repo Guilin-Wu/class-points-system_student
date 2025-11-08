@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学生积分门户</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* (你现有的 <style> 块保持不变，这里只列出关键部分) */
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: var(--background-color);
+      grid-template-areas: none;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #login-container {
+      width: 100%;
+      max-width: 450px;
+      background: var(--card-background);
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+    }
+    #portal-container {
+      display: none; /* ... (其余样式不变) ... */
+      width: 100%;
+      max-width: 1000px;
+      background: var(--card-background);
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+    }
+    #login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    #login-form .form-actions {
+      margin-top: 10px;
+      text-align: center;
+    }
+    /* 门户内部样式 (不变) */
+    .portal-header { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .portal-header h2 { margin: 0; }
+    .portal-header h2 .student-name { color: var(--primary-color); }
+    .portal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    .portal-widget { background: #f8f9fa; border-radius: 8px; padding: 20px; border: 1px solid var(--border-color); }
+    .portal-widget h3 { margin-top: 0; }
+    .portal-widget ol, .portal-widget ul { list-style: none; padding: 0; }
+    .portal-widget li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .portal-widget li .cost { font-weight: bold; color: var(--primary-color); }
+    .portal-widget li .change { font-weight: bold; }
+    .portal-widget li .change.positive { color: var(--green); }
+    .portal-widget li .change.negative { color: var(--red); }
+    #student-record-list tr.record-undone { background-color: #f8f9fa; color: #adb5bd; text-decoration: line-through; }
+    @media (max-width: 768px) { .portal-grid { grid-template-columns: 1fr; } }
+
+    /* --- ⬇️ 新增：文件加载器样式 ⬇️ --- */
+    .teacher-upload {
+      border-top: 1px solid var(--border-color);
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+    .teacher-upload label {
+      font-weight: 500;
+      color: var(--sub-font-color);
+      font-size: 0.9em;
+      display: block;
+      margin-bottom: 10px;
+    }
+    /* 样式化文件输入按钮 */
+    input[type="file"]::file-selector-button {
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background-color: var(--primary-color);
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    input[type="file"]::file-selector-button:hover {
+      background-color: var(--primary-hover);
+    }
+    /* --- ⬆️ 新增结束 ⬆️ --- */
+
+  </style>
+</head>
+
+<body>
+
+  <div id="login-container">
+    <div class="modal-header" style="border-bottom: none; margin-bottom: 15px; padding-bottom: 0;">
+      <h2 id="login-title">👨‍🎓 学生积分门户</h2>
+    </div>
+    
+    <form id="login-form">
+      <select id="select-student" required disabled>
+        <option value="">-- 请老师先加载数据 --</option>
+      </select>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" disabled>进入门户</button>
+      </div>
+
+      <div class="teacher-upload">
+        <label for="manual-file-load">教师操作：加载数据文件 (data.json)</label>
+        <input type="file" id="manual-file-load" accept=".json">
+      </div>
+      </form>
+  </div>
+
+  <div id="portal-container">
+    <div class="portal-header">
+      <h2>欢迎你, <span class="student-name">...</span>!</h2>
+      <button class="btn btn-sm" id="btn-logout">退出</button>
+    </div>
+    <div class="portal-grid">
+      <div class="portal-widget">
+        <h3>我的信息</h3>
+        <ul id="student-info-list"></ul>
+      </div>
+      <div class="portal-widget">
+        <h3>🎁 积分商城 (可兑换)</h3>
+        <ol id="store-list"></ol>
+      </div>
+    </div>
+    <div class="portal-widget" style="margin-top: 25px;">
+        <h3>📑 我的积分记录</h3>
+        <div style="max-height: 300px; overflow-y: auto;">
+          <table class="styled-table">
+            <thead>
+              <tr><th>时间</th><th>分值变化</th><th>原因</th><th>最终积分</th></tr>
+            </thead>
+            <tbody id="student-record-list"></tbody>
+          </table>
+        </div>
+    </div>
+  </div>
+
+  <script src="student_script.js"></script>
+</body>
+
+</html>
